@@ -13,7 +13,7 @@ import (
 
 	"alef_education_devops_challenge/models"
 
-	//"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	//"go.mongodb.org/mongo-driver/mongo/options"
@@ -57,34 +57,24 @@ func AddTask() gin.HandlerFunc {
 	}
 }
 
-// //GetWishList to get a single wishlist of a user
-// func GetWishList() gin.HandlerFunc {
-// 	return func(c *gin.Context) {
-// 		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
-// 		whishListID := c.Param("whishListId")
-// 		user_id := c.Param("user_id")
+//GetTask
+func GetTask() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+		title := c.Param("title")
 
-// 		var wishList models.WishList
-// 		var user models.User
+		var task models.Tasks
 
-// 		check_user := userCollection.FindOne(ctx, bson.M{"user_id": user_id}).Decode(&user)
-// 		defer cancel()
-// 		if check_user != nil {
-// 			c.JSON(http.StatusInternalServerError, gin.H{"error": "The user was not found"})
-// 			return
-// 		}
+		err := taskCollection.FindOne(ctx, bson.M{"title": title}).Decode(&task)
 
-// 		filter := bson.D{{"user_id", user_id}, {"wishlist_id", whishListID}}
-// 		err := wishListCollection.FindOne(ctx, filter).Decode(&wishList)
+		defer cancel()
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "error occured while fetching task"})
+		}
 
-// 		defer cancel()
-// 		if err != nil {
-// 			c.JSON(http.StatusInternalServerError, gin.H{"error": "error occured while listing wishlist"})
-// 		}
-
-// 		c.JSON(http.StatusOK, wishList)
-// 	}
-// }
+		c.JSON(http.StatusOK, task)
+	}
+}
 
 // //Find all wishlist for a helpee
 // func GetAllWishListByUserID() gin.HandlerFunc {
