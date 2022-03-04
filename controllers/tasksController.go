@@ -2,25 +2,26 @@ package controllers
 
 import (
 	"context"
-	"fmt"
-	"log"
 
 	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 
-	"helpme-backend/database"
+	"alef_education_devops_challenge/database"
 
-	"helpme-backend/models"
+	"alef_education_devops_challenge/models"
 
-	"go.mongodb.org/mongo-driver/bson"
+	//"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	//"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 var taskCollection *mongo.Collection = database.OpenCollection(database.Client, "task")
+
+var validate = validator.New()
 
 //Add Task
 func AddTask() gin.HandlerFunc {
@@ -45,9 +46,9 @@ func AddTask() gin.HandlerFunc {
 		task.ID = primitive.NewObjectID()
 		task.Task_id = task.ID.Hex()
 
-		resultInsertionNumber, insertErr := wishListCollection.InsertOne(ctx, wishList)
+		resultInsertionNumber, insertErr := taskCollection.InsertOne(ctx, task)
 		if insertErr != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Wish list was not created"})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "task was not created"})
 			return
 		}
 		defer cancel()
