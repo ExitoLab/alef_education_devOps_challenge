@@ -5,6 +5,9 @@ import (
 
 	"net/http"
 	"time"
+	"fmt"
+	"log"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
@@ -16,7 +19,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
-	//"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 var taskCollection *mongo.Collection = database.OpenCollection(database.Client, "task")
@@ -57,15 +60,15 @@ func AddTask() gin.HandlerFunc {
 	}
 }
 
-//GetTask
-func GetTask() gin.HandlerFunc {
+//Get a single task by task_id
+func GetTaskByTaskID() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
-		title := c.Param("title")
+		task_id := c.Param("task_id")
 
 		var task models.Tasks
 
-		err := taskCollection.FindOne(ctx, bson.M{"title": title}).Decode(&task)
+		err := taskCollection.FindOne(ctx, bson.M{"task_id": task_id}).Decode(&task)
 
 		defer cancel()
 		if err != nil {
@@ -76,179 +79,125 @@ func GetTask() gin.HandlerFunc {
 	}
 }
 
-// //Find all wishlist for a helpee
-// func GetAllWishListByUserID() gin.HandlerFunc {
-// 	return func(c *gin.Context) {
-// 		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
-// 		user_id := c.Param("user_id")
-// 		var user models.User
+//Get all tasks in the database
+func GetAllTasks() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
 
-// 		check_user := userCollection.FindOne(ctx, bson.M{"user_id": user_id}).Decode(&user)
-// 		defer cancel()
-// 		if check_user != nil {
-// 			c.JSON(http.StatusInternalServerError, gin.H{"error": "The user was not found"})
-// 			return
-// 		}
+		// recordPerPage := 10
+		recordPerPage, err := strconv.Atoi(c.Query("recordPerPage"))
+		if err != nil || recordPerPage < 1 {
+			recordPerPage = 10
+		}
 
-// 		result, err := wishListCollection.Find(context.TODO(), bson.M{"user_id": user_id})
+		page, err1 := strconv.Atoi(c.Query("page"))
+		if err1 != nil || page < 1 {
+			page = 1
+		}
 
-// 		defer cancel()
-// 		if err != nil {
-// 			c.JSON(http.StatusInternalServerError, gin.H{"error": "error occured while listing invoice items"})
-// 		}
-// 		var allWishList []bson.M
-// 		if err = result.All(ctx, &allWishList); err != nil {
-// 			log.Fatal(err)
-// 		}
-// 		c.JSON(http.StatusOK, allWishList)
-// 	}
-// }
+		startIndex := (page - 1) * recordPerPage
+		startIndex, err = strconv.Atoi(c.Query("startIndex"))
 
-// //Check minimum wish list, confirm if the wishlist is 5
-// func CountWhishList() gin.HandlerFunc {
-// 	return func(c *gin.Context) {
-// 		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
-// 		whishListID := c.Param("whishListId")
-// 		user_id := c.Param("user_id")
+		matchStage := bson.D{{"$match", bson.D{{}}}}
+		groupStage := bson.D{{"$group", bson.D{{"_id", bson.D{{"_id", "null"}}}, {"total_count", bson.D{{"$sum", 1}}}, {"data", bson.D{{"$push", "$$ROOT"}}}}}}
+		projectStage := bson.D{
+			{"$project", bson.D{
+				{"_id", 0},
+				{"total_count", 1},
+				{"total_tasks", bson.D{{"$slice", []interface{}{"$data", startIndex, recordPerPage}}}},
+			}}}
 
-// 		filter := bson.D{{"user_id", user_id}, {"wishlist_id", whishListID}}
-// 		count, err := wishListCollection.CountDocuments(ctx, filter)
+		result, err := taskCollection.Aggregate(ctx, mongo.Pipeline{
+			matchStage, groupStage, projectStage})
+		defer cancel()
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "error occured while listing tasks"})
+		}
+		var allTasks []bson.M
+		if err = result.All(ctx, &allTasks); err != nil {
+			log.Fatal(err)
+		}
+		c.JSON(http.StatusOK, allTasks[0])
 
-// 		defer cancel()
-// 		if err != nil {
-// 			log.Panic(err)
-// 			c.JSON(http.StatusInternalServerError, gin.H{"error": "error occured while checking counting documents"})
-// 			return
-// 		}
-// 		c.JSON(http.StatusOK, count)
-// 	}
-// }
+	}
+}
 
-// // Delete a single wish list
-// func DeleteWishListByID() gin.HandlerFunc {
-// 	return func(c *gin.Context) {
-// 		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
-// 		whishListID := c.Param("whishListId")
-// 		user_id := c.Param("user_id")
+// Delete a Task
+func DeleteTaskByTaskID() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+		task_id := c.Param("task_id")
 
-// 		filter := bson.D{{"user_id", user_id}, {"wishlist_id", whishListID}}
-// 		result, err := wishListCollection.DeleteOne(ctx, filter)
+		result, err := taskCollection.DeleteOne(ctx, bson.M{"task_id": task_id})
 
-// 		defer cancel()
-// 		if err != nil {
-// 			log.Panic(err)
-// 			c.JSON(http.StatusBadRequest, gin.H{"status": "failed", "message": "Error occured while trying to delete the document"})
-// 			return
-// 		}
+		defer cancel()
+		if err != nil {
+			log.Panic(err)
+			c.JSON(http.StatusBadRequest, gin.H{"status": "failed", "message": "Error occured while trying to delete the document"})
+			return
+		}
 
-// 		if result.DeletedCount > 0 {
-// 			c.JSON(http.StatusOK, gin.H{"status": "success", "message": "Wish list successfully deleted"})
-// 		} else {
-// 			c.JSON(http.StatusOK, gin.H{"status": "success", "message": "No wish list to be deleted"})
-// 		}
-// 	}
-// }
+		if result.DeletedCount > 0 {
+			c.JSON(http.StatusOK, gin.H{"status": "success", "message": "The task was successfully deleted"})
+		} else {
+			c.JSON(http.StatusOK, gin.H{"status": "success", "message": "No Task to be deleted"})
+		}
+	}
+}
 
-// //UpdateWishList is the api used to update wishlist
-// func UpdateWishList() gin.HandlerFunc {
-// 	return func(c *gin.Context) {
-// 		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
-// 		var wishList models.WishList
-// 		var interest models.Interest
-// 		var user models.User
+//Update a Task
+func UpdateTaskByTaskID() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+		var task models.Tasks
 
-// 		wishListId := c.Param("whishListId")
-// 		user_id := c.Param("user_id")
+		task_id := c.Param("task_id")
 
-// 		if err := c.BindJSON(&wishList); err != nil {
-// 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-// 			return
-// 		}
+		if err := c.BindJSON(&task); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
 
-// 		var updateObj primitive.D
+		var updateObj primitive.D
 
-// 		if wishList.Name != nil {
-// 			updateObj = append(updateObj, bson.E{"name", wishList.Name})
-// 		}
+		if task.Title != nil {
+			updateObj = append(updateObj, bson.E{"title", task.Title})
+		}
 
-// 		wishList.Date, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
-// 		updateObj = append(updateObj, bson.E{"date", wishList.Date})
+		if task.Description != nil {
+			updateObj = append(updateObj, bson.E{"description", task.Description})
+		}
+		defer cancel()
 
-// 		if wishList.Description != nil {
-// 			updateObj = append(updateObj, bson.E{"description", wishList.Description})
-// 		}
+		task.Created_at, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
+		updateObj = append(updateObj, bson.E{"created_at", task.Created_at})
 
-// 		wishList.Created_at, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
-// 		updateObj = append(updateObj, bson.E{"created_at", wishList.Created_at})
+		task.Updated_at, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
+		updateObj = append(updateObj, bson.E{"updated_at", task.Updated_at})
 
-// 		wishList.Updated_at, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
-// 		updateObj = append(updateObj, bson.E{"updated_at", wishList.Updated_at})
+		upsert := true
+		filter := bson.M{"task_id": task_id}
+		opt := options.UpdateOptions{
+			Upsert: &upsert,
+		}
 
-// 		//Check if interest_id exist
-// 		if wishList.Interest_id != "" {
-// 			err := interestsCollection.FindOne(ctx, bson.M{"interest_id": wishList.Interest_id}).Decode(&interest)
-// 			defer cancel()
-// 			if err != nil {
-// 				msg := fmt.Sprintf("message: interest was not found")
-// 				c.JSON(http.StatusInternalServerError, gin.H{"error": msg})
-// 				return
-// 			}
-// 			updateObj = append(updateObj, bson.E{"interest_id", wishList.Interest_id})
-// 		}
+		result, err := taskCollection.UpdateOne(
+			ctx,
+			filter,
+			bson.D{
+				{"$set", updateObj},
+			},
+			&opt,
+		)
 
-// 		//Check if User_id exist
-// 		if wishList.User_id != nil {
-// 			err := userCollection.FindOne(ctx, bson.M{"user_id": wishList.User_id}).Decode(&user)
+		if err != nil {
+			msg := fmt.Sprintf("Task update failed")
+			c.JSON(http.StatusInternalServerError, gin.H{"error": msg})
+			return
+		}
 
-// 			defer cancel()
-// 			if err != nil {
-// 				msg := fmt.Sprintf("message: user id was not found")
-// 				c.JSON(http.StatusInternalServerError, gin.H{"error": msg})
-// 				return
-// 			}
-// 			updateObj = append(updateObj, bson.E{"user_id", wishList.User_id})
-// 		}
-
-// 		if user_id != *wishList.User_id {
-// 			c.JSON(http.StatusBadRequest, gin.H{"Status": "Failed", "message": "The user id and wishlist user id is not equal"})
-// 			return
-// 		}
-
-// 		//Check if Wishlist_id exist
-// 		if wishList.Wishlist_id != "" {
-// 			err := wishListCollection.FindOne(ctx, bson.M{"wishlist_id": wishList.Wishlist_id}).Decode(&interest)
-// 			defer cancel()
-// 			if err != nil {
-// 				msg := fmt.Sprintf("message: wishlist id was not found")
-// 				c.JSON(http.StatusInternalServerError, gin.H{"error": msg})
-// 				return
-// 			}
-// 			updateObj = append(updateObj, bson.E{"wishlist_id", wishList.Wishlist_id})
-// 		}
-
-// 		upsert := true
-// 		filter := bson.M{"wishlist_id": wishListId}
-// 		opt := options.UpdateOptions{
-// 			Upsert: &upsert,
-// 		}
-
-// 		result, err := wishListCollection.UpdateOne(
-// 			ctx,
-// 			filter,
-// 			bson.D{
-// 				{"$set", updateObj},
-// 			},
-// 			&opt,
-// 		)
-
-// 		if err != nil {
-// 			msg := fmt.Sprintf("Wish list item update failed")
-// 			c.JSON(http.StatusInternalServerError, gin.H{"error": msg})
-// 			return
-// 		}
-
-// 		if result.ModifiedCount > 0 {
-// 			c.JSON(http.StatusOK, gin.H{"status": "Successful", "message": "The wish list is successfully updated"})
-// 		}
-// 	}
-// }
+		if result.ModifiedCount > 0 {
+			c.JSON(http.StatusOK, gin.H{"status": "Successful", "message": "The task has been successfully updated"})
+		}
+	}
+}
