@@ -201,3 +201,10 @@ func UpdateTaskByTaskID() gin.HandlerFunc {
 		}
 	}
 }
+
+//Health end point
+func HealthCheck() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.JSON(200, gin.H{"Success": "The application is running"})
+	}
+}

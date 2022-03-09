@@ -1,0 +1,13 @@
+# Helm chart folder
+chart
+
+# Git repo
+.git
+
+.gitignore
+docker-compose.yml
+
+Dockerfile
+Makefile
+
+README.md
