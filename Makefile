@@ -28,3 +28,11 @@ compose-top: ## Display the running processes
 .PHONY: compose-ps
 compose-ps: ## List containers
 	docker-compose ps
+
+.PHONY: docker-scan
+docker-scan: ## Scan docker image after building
+	docker scan api
+
+
+
+

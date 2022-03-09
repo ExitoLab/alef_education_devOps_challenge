@@ -11,7 +11,7 @@ services:
       - host
 
   api:
-    container_name: helpme_web_service
+    container_name: api
     build:
       context: .
     ports:
