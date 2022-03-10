@@ -33,6 +33,43 @@ compose-ps: ## List containers
 docker-scan: ## Scan docker image after building
 	docker scan api
 
+.PHONY: setup-infra
+setup-infra: ## Setting up infra
+	@echo 'Setting up infrausing helmcharts'
+	helm repo add bitnami https://charts.bitnami.com/bitnami
 
+.PHONY: install-mongodb
+install-mongodb: setup-infra ## Install  mongodb
+	@echo 'Installing mongodb using helmcharts'
+	helm upgrade --install mongodb bitnami/mongodb -f mongodb-k8-manifest/values.yaml
+	sleep 20s
 
+.PHONY: delete-mongodb
+delete-mongodb: ## Delete  mongodb
+	@echo 'Deleting mongodb using helmcharts'
+	helm delete mongodb
 
+.PHONY: install-nginx-controller
+install-nginx-controller: setup-infra ## Install nginx controller
+	@echo 'Installing nginx controller using helmcharts'
+	helm upgrade --install nginx-ingress-controller bitnami/nginx-ingress-controller
+	sleep 20s
+
+.PHONY: install-nginx-controller
+delete-nginx-controller: ## Delete nginx controller
+	@echo 'Deleting nginx controller using helmcharts'
+	helm delete nginx-ingress-controller
+
+.PHONY: install-api
+install-api: install-nginx-controller install-mongodb ## install api
+	@echo 'Installing the rest-api'
+	helm upgrade --install api ./api-k8-helm-manifest -f api-k8-helm-manifest/values.yaml
+
+.PHONY: uninstall-api
+uninstall-api: delete-nginx-controller delete-app ## uninstall api
+	@echo 'Installing the rest-api'
+	helm upgrade --install api ./api-k8-helm-manifest -f api-k8-helm-manifest/values.yaml
+
+delete-app: delete-mongodb ## upgrade rest-api
+	@echo 'Deleting the api'
+	helm delete api

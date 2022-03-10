@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ template "name" . }}
+  labels:
+    app: {{ template "name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: api
+  strategy: {}
+  template:
+    metadata:
+      labels:
+        app: {{ template "name" . }}
+        release: {{ .Release.Name }}
+    spec:
+      containers:
+      - image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        name: {{ .Chart.Name }}
+        env:
+          - name: PORT
+            value: "{{ .Values.service.internalPort }}"
+          - name: MONGODB_HOSTNAME
+            value: "{{ .Values.mongodb.MONGODB_HOSTNAME }}"
+          - name: MONGODB_DATABASE
+            value: "{{ .Values.mongodb.MONGODB_DATABASE }}"
+        ports:
+        - containerPort: {{ .Values.service.externalPort }}
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: {{ .Values.service.internalPort }}
+          failureThreshold: {{ .Values.livenessProbe.httpGet.failureThreshold }}
+          periodSeconds: {{ .Values.livenessProbe.httpGet.periodSeconds }}
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: {{ .Values.service.internalPort }}
+          failureThreshold: {{ .Values.readinessProbe.httpGet.failureThreshold }}
+          periodSeconds: {{ .Values.readinessProbe.httpGet.periodSeconds }}
+        resources:
+          requests:
+            memory: "{{ .Values.resources.requests.memory }}"
+            cpu: "{{ .Values.resources.requests.cpu }}"
+          limits:
+            memory: "{{ .Values.resources.requests.memory }}"
+            cpu: "{{ .Values.resources.requests.cpu }}"
+status: {}

@@ -11,3 +11,23 @@ Dockerfile
 Makefile
 
 README.md
+
+api-k8-helm-manifest/*
+mongodb-k8-manifest/*
+
+api-k8-helm-manifest
+mongodb-k8-manifest
+
+new
+
+.DS_Store
+*/.DS_Store
+
+### VisualStudioCode ###
+.vscode/*
+
+### VisualStudioCode Patch ###
+# Ignore all local history of files
+.history
+new
+nohup.out 
