@@ -3,7 +3,7 @@
 replicaCount: 1
 image:
   repository: talk2toks/alef-challenge
-  tag: v0.0.8
+  tag: v0.0.11
   pullPolicy: Always
 service:
   name: api
