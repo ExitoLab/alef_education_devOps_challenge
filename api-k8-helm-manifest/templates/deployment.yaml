@@ -31,19 +31,19 @@ spec:
           - name: MONGODB_DATABASE
             value: "{{ .Values.mongodb.MONGODB_DATABASE }}"
         ports:
-        - containerPort: "{{ .Values.service.externalPort }}"
+        - containerPort: {{ .Values.service.externalPort }}
         livenessProbe:
           httpGet:
             path: /healthz
-            port: "{{ .Values.service.internalPort }}"
-          failureThreshold: "{{ .Values.livenessProbe.httpGet.failureThreshold }}"
-          periodSeconds: "{{ .Values.livenessProbe.httpGet.periodSeconds }}"
+            port: {{ .Values.service.internalPort }}
+          failureThreshold: {{ .Values.livenessProbe.httpGet.failureThreshold }}
+          periodSeconds: {{ .Values.livenessProbe.httpGet.periodSeconds }}
         readinessProbe:
           httpGet:
             path: /healthz
-            port: "{{ .Values.service.internalPort }}"
-          failureThreshold: "{{ .Values.readinessProbe.httpGet.failureThreshold }}"
-          periodSeconds: "{{ .Values.readinessProbe.httpGet.periodSeconds }}"
+            port: {{ .Values.service.internalPort }}
+          failureThreshold: {{ .Values.readinessProbe.httpGet.failureThreshold }}
+          periodSeconds: {{ .Values.readinessProbe.httpGet.periodSeconds }}
         resources:
           requests:
             memory: "{{ .Values.resources.requests.memory }}"
