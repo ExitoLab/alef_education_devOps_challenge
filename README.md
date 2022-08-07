@@ -20,3 +20,40 @@ The application is created using:
 
 1. Command to start the application using helm. Run `make install-api`
 
+
+
+You can run the app using the old fashion way.
+
+## To deploy 
+
+1. Create mongodb 
+2. Install golang 
+3. Run command `go build -o new -v`
+4. Run command `./new` 
+5. To run in background use this command `nohup ./new &`
+
+
+## Kill running app on port 8000
+
+To kill the app while debugging run this command `kill -9 $(lsof -t -i:8000)`
+
+## More Debugging 
+
+To debug use `netstat -plten`You can run the app using docker-compose or the old fashion way.
+
+## To deploy 
+
+1. Create mongodb 
+2. Install golang 
+3. Run command `go build -o new -v`
+4. Run command `./new` 
+5. To run in background use this command `nohup ./new &`
+
+
+## Kill running app on port 8000
+
+To kill the app while debugging run this command `kill -9 $(lsof -t -i:5000)`
+
+## More Debugging 
+
+To debug use `netstat -plten`
