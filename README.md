@@ -33,9 +33,9 @@ You can run the app using the old fashion way.
 5. To run in background use this command `nohup ./new &`
 
 
-## Kill running app on port 8000
+## Kill running app on port 5000
 
-To kill the app while debugging run this command `kill -9 $(lsof -t -i:8000)`
+To kill the app while debugging run this command `kill -9 $(lsof -t -i:5000)`
 
 ## More Debugging 
 
@@ -48,11 +48,6 @@ To debug use `netstat -plten`You can run the app using docker-compose or the old
 3. Run command `go build -o new -v`
 4. Run command `./new` 
 5. To run in background use this command `nohup ./new &`
-
-
-## Kill running app on port 8000
-
-To kill the app while debugging run this command `kill -9 $(lsof -t -i:5000)`
 
 ## More Debugging 
 
