@@ -3,11 +3,11 @@ package controllers
 import (
 	"context"
 
-	"net/http"
-	"time"
 	"fmt"
 	"log"
+	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
@@ -34,13 +34,21 @@ func AddTask() gin.HandlerFunc {
 
 		defer cancel()
 		if err := c.BindJSON(&task); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			c.JSON(http.StatusBadRequest, gin.H{
+				"data":         "",
+				"respondeCode": http.StatusBadRequest,
+				"message":      err.Error(),
+			})
 			return
 		}
 
 		validationErr := validate.Struct(task)
 		if validationErr != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": validationErr.Error()})
+			c.JSON(http.StatusBadRequest, gin.H{
+				"data":         "",
+				"respondeCode": http.StatusBadRequest,
+				"message":      validationErr.Error(),
+			})
 			return
 		}
 
@@ -51,12 +59,20 @@ func AddTask() gin.HandlerFunc {
 
 		resultInsertionNumber, insertErr := taskCollection.InsertOne(ctx, task)
 		if insertErr != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "task was not created"})
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"data":         "",
+				"respondeCode": http.StatusInternalServerError,
+				"message":      "task was not created",
+			})
 			return
 		}
-		defer cancel()
 
-		c.JSON(http.StatusOK, resultInsertionNumber)
+		c.JSON(http.StatusOK, gin.H{
+			"data":         resultInsertionNumber,
+			"respondeCode": http.StatusOK,
+			"message":      "The tasks has been successfully created",
+		})
+
 	}
 }
 
@@ -72,10 +88,20 @@ func GetTaskByTaskID() gin.HandlerFunc {
 
 		defer cancel()
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "error occured while fetching task"})
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"data":         task,
+				"respondeCode": http.StatusInternalServerError,
+				"message":      "error occured while fetching task",
+			})
+
 		}
 
-		c.JSON(http.StatusOK, task)
+		c.JSON(http.StatusOK, gin.H{
+			"data":         task,
+			"respondeCode": http.StatusOK,
+			"message":      "",
+		})
+
 	}
 }
 
@@ -117,8 +143,12 @@ func GetAllTasks() gin.HandlerFunc {
 		if err = result.All(ctx, &allTasks); err != nil {
 			log.Fatal(err)
 		}
-		c.JSON(http.StatusOK, allTasks[0])
 
+		c.JSON(http.StatusOK, gin.H{
+			"data":         allTasks[0],
+			"respondeCode": http.StatusOK,
+			"message":      "",
+		})
 	}
 }
 
@@ -132,15 +162,26 @@ func DeleteTaskByTaskID() gin.HandlerFunc {
 
 		defer cancel()
 		if err != nil {
-			log.Panic(err)
-			c.JSON(http.StatusBadRequest, gin.H{"status": "failed", "message": "Error occured while trying to delete the document"})
+			c.JSON(http.StatusBadRequest, gin.H{
+				"data":         "",
+				"responseCode": http.StatusBadRequest,
+				"message":      "Error occured while trying to delete the document",
+			})
 			return
 		}
 
 		if result.DeletedCount > 0 {
-			c.JSON(http.StatusOK, gin.H{"status": "success", "message": "The task was successfully deleted"})
+			c.JSON(http.StatusOK, gin.H{
+				"data":         "",
+				"responseCode": http.StatusOK,
+				"message":      "The task was successfully deleted",
+			})
 		} else {
-			c.JSON(http.StatusOK, gin.H{"status": "success", "message": "No Task to be deleted"})
+			c.JSON(http.StatusOK, gin.H{
+				"data":         "",
+				"responseCode": http.StatusOK,
+				"message":      "No Task to be deleted",
+			})
 		}
 	}
 }
@@ -205,6 +246,10 @@ func UpdateTaskByTaskID() gin.HandlerFunc {
 //Health end point
 func HealthCheck() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		c.JSON(200, gin.H{"Success": "The application is running"})
+		c.JSON(http.StatusOK, gin.H{
+			"data":         "",
+			"responseCode": http.StatusOK,
+			"message":      "The application is running sucessfully",
+		})
 	}
 }
